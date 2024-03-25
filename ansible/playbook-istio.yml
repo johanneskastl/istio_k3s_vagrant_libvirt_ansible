@@ -56,8 +56,6 @@
         release_name: 'istio-base'
         chart_ref: 'base'
         release_namespace: 'istio-system'
-        values:
-          defaultRevision: 'default'
 
     - name: 'Install Istiod via helm chart'
       # running this from vagrant fails, if we target localhost directly
