@@ -1,0 +1,78 @@
+---
+
+- name: 'Gather facts'
+  hosts: 'all'
+  gather_facts: true
+
+- name: 'Install Istio'
+  hosts: 'k3s1'
+  gather_facts: false
+  become: false
+  module_defaults:
+    kubernetes.core.helm:
+      kubeconfig: './k3s-kubeconfig'
+    kubernetes.core.k8s:
+      kubeconfig: './k3s-kubeconfig'
+    kubernetes.core.k8s_info:
+      kubeconfig: './k3s-kubeconfig'
+
+  tasks:
+
+    - name: 'Create the istio-system namespace'
+      # running this from vagrant fails, if we target localhost directly
+      delegate_to: 'localhost'
+      kubernetes.core.k8s:
+        name: 'istio-system'
+        api_version: 'v1'
+        kind: 'Namespace'
+        state: 'present'
+
+    - name: 'Create the istio-ingress namespace'
+      # running this from vagrant fails, if we target localhost directly
+      delegate_to: 'localhost'
+      kubernetes.core.k8s:
+        name: 'istio-ingress'
+        api_version: 'v1'
+        kind: 'Namespace'
+        state: 'present'
+
+    - name: 'Label the default namespace'
+      # running this from vagrant fails, if we target localhost directly
+      delegate_to: 'localhost'
+      kubernetes.core.k8s:
+        state: 'patched'
+        kind: 'Namespace'
+        name: 'default'
+        definition:
+          metadata:
+            labels:
+              istio-injection: enabled
+
+    - name: 'Install Istio base via helm chart'
+      # running this from vagrant fails, if we target localhost directly
+      delegate_to: 'localhost'
+      kubernetes.core.helm:
+        chart_repo_url: 'https://istio-release.storage.googleapis.com/charts'
+        release_name: 'istio-base'
+        chart_ref: 'base'
+        release_namespace: 'istio-system'
+        values:
+          defaultRevision: 'default'
+
+    - name: 'Install Istiod via helm chart'
+      # running this from vagrant fails, if we target localhost directly
+      delegate_to: 'localhost'
+      kubernetes.core.helm:
+        chart_repo_url: 'https://istio-release.storage.googleapis.com/charts'
+        release_name: 'istiod'
+        chart_ref: 'istiod'
+        release_namespace: 'istio-system'
+
+    - name: 'Install Istiod via helm chart'
+      # running this from vagrant fails, if we target localhost directly
+      delegate_to: 'localhost'
+      kubernetes.core.helm:
+        chart_repo_url: 'https://istio-release.storage.googleapis.com/charts'
+        release_name: 'istio-ingress'
+        chart_ref: 'gateway'
+        release_namespace: 'istio-ingress'
