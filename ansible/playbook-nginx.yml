@@ -30,3 +30,69 @@
             type: ClusterIP
           ingress:
             enabled: false
+
+    #
+    # Nginx Istio definitions
+    #
+
+    - name: 'Install Nginx Gateway'
+      # running this from vagrant fails, if we target localhost directly
+      delegate_to: 'localhost'
+      kubernetes.core.k8s:
+        state: 'present'
+        resource_definition: |
+          apiVersion: networking.istio.io/v1beta1
+          kind: Gateway
+          metadata:
+            name: nginx-gateway
+            namespace: default
+          spec:
+            selector:
+              istio: ingress
+            servers:
+            - port:
+                number: 80
+                name: http
+                protocol: HTTP
+              hosts:
+              - "nginx.{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}.sslip.io"
+
+    - name: 'Install Nginx VirtualService'
+      # running this from vagrant fails, if we target localhost directly
+      delegate_to: 'localhost'
+      kubernetes.core.k8s:
+        state: 'present'
+        resource_definition: |
+          apiVersion: networking.istio.io/v1beta1
+          kind: VirtualService
+          metadata:
+            name: nginx-virtualservice
+            namespace: default
+          spec:
+            hosts:
+            - "nginx.{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}.sslip.io"
+            http:
+              - name: "nginx"
+                route:
+                - destination:
+                    host: nginx.default.svc.cluster.local
+            gateways:
+            - "nginx-gateway"
+
+    #
+    # Final checks
+    #
+
+    - name: 'Wait for URL to be available'
+      ansible.builtin.uri:
+        url: "http://nginx.{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}.sslip.io"
+      register: result
+      until: "result.status == 200"
+      retries: 31
+      delay: 10
+      delegate_to: 'localhost'
+
+    - name: 'Output URL'
+      ansible.builtin.debug:
+        msg: "You can access the Nginx deployment here: http://nginx.{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}.sslip.io"
+      delegate_to: 'localhost'
