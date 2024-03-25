@@ -8,3 +8,6 @@
 
 - name: 'Run playbook-istio.yml'
   ansible.builtin.import_playbook: playbook-istio.yml
+
+- name: 'Run playbook-nginx.yml'
+  ansible.builtin.import_playbook: playbook-nginx.yml
