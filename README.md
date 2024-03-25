@@ -3,6 +3,15 @@
 Vagrant-libvirt setup that creates a VM with k3s and installs
 [Istio](https://istio.io/).
 
+A nginx pod is running in the default namespace, and the deployments sets up all
+required Istio configuration so it is reachable from the outside.
+
+Traefik, which normally is installed with k3s, is not used in this setup, as
+Istio's `ingress-gateway` takes care of handling incoming traffic.
+
+The Ansible deployment prints out the URL, at which the Nginx deployment can be
+reached.
+
 Default OS is openSUSE Leap 15.5, but that can be changed in the Vagrantfile.
 Please be aware, that this might break the Ansible provisioning.
 
@@ -16,7 +25,15 @@ Please be aware, that this might break the Ansible provisioning.
 1. Run `vagrant up`
 1. Run `kubectl --kubeconfig ansible/k3s-kubeconfig get nodes` and you should
    see your server.
-1. Party!
+1. Open the URL that Ansible printed in the end, it looks something like this:
+
+   ```
+   http://nginx.192.0.2.13.sslip.io
+   ```
+
+   (where `192.0.2.13` is the VM's IP address)
+
+1. You should see the Nginx welcome page. Party!
 
 ## Disabling the Ansible provisioning
 
